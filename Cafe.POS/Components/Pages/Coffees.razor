@@ -1,0 +1,199 @@
+﻿@page "/coffees"
+@using Cafe.POS.Models
+@using Cafe.POS.Services
+@using System.Globalization
+@using Cafe.POS.Models.Enums
+
+<div class="row mt-3 mb-3">
+	<div class="col-6">
+		<h3>Coffee Index</h3>
+	</div>
+	<div class="col-6 text-end">
+		@if (_globalState.User?.Role == Role.Admin)
+		{
+			<button class="btn btn-outline-dark" type="button" @onclick="OpenAddCoffeeDialog">
+				<i class="fa-solid fa-plus"></i> &nbsp; Add a new coffee
+			</button>
+		}
+	</div>
+</div>
+
+<ul class="nav nav-tabs">
+	<li class="nav-item ">
+		<a class='nav-link btn @(_tabFilter == "All" ? "active" : "")' @onclick='()=>TabFilter("All")'>All</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Active" ? "active" : "")' @onclick='()=>TabFilter("Active")'>Active</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "In Active" ? "active" : "")' @onclick='()=>TabFilter("In Active")'>In Active</a>
+	</li>
+</ul>		
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				<div class="d-flex">
+					Status
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					<input type="search" class="form-control search" placeholder="Search a Coffee" @oninput="SearchCoffeeName" />
+					<a class='btn text-@(_sortBy == "coffee" ? "primary" : "secondary")' data-mdb-toggle="tooltip" 
+						@onclick='()=>SortByHandler("coffee")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "coffee" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Price
+					<a class='btn text-@(_sortBy == "price" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("price")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "price" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created By
+					<a class='btn text-@(_sortBy == "createdBy" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdBy")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdBy" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created At
+					<a class='btn text-@(_sortBy == "createdAt" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdAt")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdAt" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+	@{
+		IEnumerable<Coffee> coffees = _coffees;
+
+		coffees = _tabFilter switch
+		{
+			"Active" => coffees.Where(x => x.IsActive),
+			"In Active" => coffees.Where(x => !x.IsActive),
+			_ => _sortBy switch
+			{
+				"coffee" => _sortDirection == "up" ? coffees.OrderBy(p => p.Name) : coffees.OrderByDescending(p => p.Name),
+				"price" => _sortDirection == "up" ? CoffeeService.MergeSort(coffees.ToList()) : coffees.OrderByDescending(p => p.Price),
+				"createdBy" => _sortDirection == "up" ? coffees.OrderBy(p => p.CreatedBy) : coffees.OrderByDescending(p => p.CreatedBy),
+				"createdAt" => _sortDirection == "up" ? coffees.OrderBy(p => p.CreatedOn) : coffees.OrderByDescending(p => p.CreatedOn),
+				_ => coffees
+			}
+		};
+
+		foreach (var coffee in coffees)
+		{
+			<tr>
+				<td>
+					<div class="form-check">
+						<input class="form-check-input me-0" type="checkbox" checked="@coffee.IsActive" @onchange='()=>UpdateActiveStatus(coffee)' />
+					</div>
+				</td>
+				<td class='@(coffee.IsActive ? "" : "text-danger")'>@coffee.Name</td>
+				<td class="@(coffee.IsActive ? "text-end" : "text-danger text-end")">@coffee.Price.ToString("N2", CultureInfo.CreateSpecificCulture("ne-NP"))</td>
+				<td class='@(coffee.IsActive ? "" : "text-danger")'>
+					@{
+						var creator = CoffeeService.GetById(coffee.Id);
+						var user = UserService.GetById(creator.CreatedBy);
+						<span>@(creator.Id == Guid.Empty ? "Administration" : user.Username)</span>
+					}
+				</td>
+				<td class='@(coffee.IsActive ? "" : "text-danger")'>
+					<p class="small mb-0"> @coffee.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</p>
+				</td>
+				<td class='@(coffee.IsActive ? "" : "text-danger")'>
+					@if (_globalState.User != null)
+					{
+						switch (_globalState.User.Role)
+						{
+							case Role.Admin:
+							{
+								<button class="btn btn-outline-secondary" type="button" @onclick="() => OpenPasswordDialog(coffee, true)">
+									<i class="fa-solid fa-pen"></i> &nbsp; Edit
+								</button>
+								<button class="btn btn-outline-danger" type="button" @onclick="() => OpenPasswordDialog(coffee, false)">
+									<i class="fa-solid fa-trash"></i> &nbsp; Delete
+								</button>
+								break;
+							}
+							case Role.Staff:
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+					}
+				</td>
+			</tr>
+		}
+	}
+	</tbody>
+</table>
+
+@if (_showUpsertCoffeeDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnUpsertCoffeeDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Coffee Title</label>
+				<input type="text" class="form-control" @bind="_coffeeModel.Name" placeholder="Enter a coffee title">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Coffee Description</label>
+				<textarea type="text" class="form-control" @bind="_coffeeModel.Description" placeholder="Enter the coffee description"></textarea>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Price</label>
+				<input type="number" class="form-control" @bind="_coffeeModel.Price" placeholder="Enter the price of the coffee">
+			</div>
+		</form>
+
+	@if (!string.IsNullOrEmpty(_upsertCoffeeErrorMessage))
+	{
+		<ErrorMessage Type="danger" Message="@_upsertCoffeeErrorMessage" />
+	}
+	</ModalDialog>
+}
+
+@if (_showDeleteCoffeeDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnDeleteCoffeeDialogClose" OkLabel="@_dialogOkLabel">
+		
+		<p>Are you sure you want to delete <strong>@_coffeeModel.Name</strong>?</p>
+		
+		@if (!string.IsNullOrEmpty(_deleteCoffeeErrorMessage))
+		{
+			<ErrorMessage Type="danger" Message="@_deleteCoffeeErrorMessage" />
+		}
+	</ModalDialog>
+}
+
+@if (_showPasswordDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnPasswordVerifyDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Password</label>
+				<input type="password" class="form-control" @bind="_password" placeholder="Enter the admin password">
+			</div>
+		</form>
+
+		@if (!string.IsNullOrEmpty(_passwordErrorMessage))
+		{
+			<ErrorMessage Type="danger" Message="@_passwordErrorMessage" />
+		}
+	</ModalDialog>
+}

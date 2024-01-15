@@ -1,0 +1,84 @@
+﻿@page "/home"
+@using System.Globalization
+
+<style>
+    /* Pulse - a trace of purple UI Theme */
+    body {
+        background-color: #f0e7f6; /* Pulse purple background color */
+        color: #4527a0; /* Dark text color for contrast */
+    }
+
+    .container {
+        margin-top: 3rem;
+    }
+
+    h1, h2 {
+        color: #673ab7; /* Pulse purple heading color */
+    }
+
+    .lead {
+        color: #7e57c2; /* Slightly darker Pulse purple text color */
+    }
+
+    ul.list-unstyled li {
+        color: #512da8; /* Pulse purple accent color for list items */
+    }
+
+    strong {
+        color: #673ab7; /* Pulse purple for strong elements */
+    }
+
+    .btn {
+        background-color: #8e24aa; /* Pulse purple for buttons */
+        color: #ffffff; /* White text on buttons */
+    }
+
+    /* Custom Content for Bislerium Café */
+    .container.text-center.my-5 h1.display-4 {
+        color: #d35400; /* Bislerium Café orange heading color */
+    }
+
+    .container.text-center.my-5 p.lead {
+        color: #6e6e6e; /* Subdued text color */
+    }
+
+    ul.list-unstyled li {
+        color: #2980b9; /* Bislerium Café blue accent color for list items */
+    }
+
+    .container.text-center.my-5 button.btn-secondary {
+        background-color: #e67e22; /* Bislerium Café orange for buttons */
+    }
+</style>
+
+<div class="container text-center my-5">
+    <h1 class="display-4 mt-3">Welcome to Bislerium Café</h1>
+    <p class="lead">Sip, savor, and let the world fade away. In the symphony of life, every cup is a note, and our cafe is the perfect melody..</p>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-6 text-center">
+            <h2>Discover Bislerium Café Features</h2>
+            <ul class="list-unstyled">
+                <li class="mb-1">🌟 Fresh and Efficient</li>
+                <li class="mb-1">🚀 Streamlined Order Management</li>
+                <li class="mb-1">📊 Insightful Analytics</li>
+                <li class="mb-1">🔐 Secure and Trustworthy</li>
+            </ul>
+        </div>
+        <div class="col-md-6 text-center">
+            <h2>Bislerium Café Metrics</h2>
+            <li>Orders Processed: <strong>@_orderCount</strong></li>
+            <li>Total Revenue: <strong>Rs @_revenueGenerated.ToString("N2", CultureInfo.CreateSpecificCulture("ne-NP"))</strong></li>
+            <li>Satisfied Customers: <strong>@_customerCount</strong></li>
+            <li>Today's Earnings: <strong>Rs @_todayRevenueGenerated.ToString("N2", CultureInfo.CreateSpecificCulture("ne-NP"))</strong></li>
+        </div>
+    </div>
+</div>
+
+<div class="container text-center my-5">
+    <h2>Start Your Bislerium Café Journey</h2>
+    <p>Bislerium Café is on the lookout for a Point of Sale (POS) solution. Ready to experience the freshness? Sign up for a free trial or reach out to our sales team for more details.</p>
+    <button class="btn btn-secondary">Contact Sales</button>
+</div>

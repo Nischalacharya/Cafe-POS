@@ -1,0 +1,37 @@
+﻿@page "/login"
+
+@inject NavigationManager NavManager
+
+<div class="vh-100 d-flex justify-content-center align-items-center">
+	<div class="container">
+		<div class="row d-flex justify-content-center">
+			<div class="col-12 col-md-8 col-lg-6">
+				<div class="border border-3 border-secondary rounded-2">
+					<div class="card bg-white shadow-lg">
+						<div class="card-body p-5">
+							<form class="mb-1 mt-md-4" @onsubmit="LoginHandler">
+								<h2 class="fw-bold mb-2">Login</h2>
+								<p class=" mb-4">Please sign in by your username and password.</p>
+								<div class="mb-3">
+									<label class="form-label required">Username</label>
+									<input type="text" class="form-control" @bind="_username" placeholder="Enter your username">
+								</div>
+								<div class="mb-3">
+									<label class="form-label required">Password</label>
+									<input type="password" class="form-control" @bind="_password" placeholder="*******">
+								</div>
+								@if (!string.IsNullOrEmpty(_errorMessage))
+								{
+									<ErrorMessage Type="danger" Message="@_errorMessage" />
+								}
+								<div class="mt-4 d-grid">
+									<button class="btn btn-outline-dark" type="submit">Login</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

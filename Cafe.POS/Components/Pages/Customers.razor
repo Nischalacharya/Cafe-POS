@@ -1,0 +1,153 @@
+﻿@page "/customers"
+@using Cafe.POS.Models
+@using Cafe.POS.Services
+
+<div class="row mt-3 mb-3">
+    <div class="col-6">
+        <h3>Customer Index</h3>
+    </div>
+    <div class="col-6 text-end">
+        <button class="btn btn-outline-dark" type="button" @onclick="OpenAddUserDialog">
+            <i class="fa-solid fa-plus"></i> &nbsp; Customer Registration
+        </button>
+    </div>
+</div>
+
+<ul class="nav nav-tabs">
+	<li class="nav-item ">
+		<a class='nav-link btn @(_tabFilter == "All" ? "active" : "")' @onclick='()=>TabFilter("All")'>All</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Regular" ? "active" : "")' @onclick='()=>TabFilter("Regular")'>Active</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Complimentary" ? "active" : "")' @onclick='()=>TabFilter("Complimentary")'>In Active</a>
+	</li>
+</ul>		
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				<div class="d-flex">
+					<input type="search" class="form-control search" placeholder="Search a user" @oninput="SearchUserName" />
+					<a class='btn text-@(_sortBy == "username" ? "primary" : "secondary")' data-mdb-toggle="tooltip" 
+						@onclick='()=>SortByHandler("username")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "username" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Phone Number
+					<a class='btn text-@(_sortBy == "phoneNumber" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("phoneNumber")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "phoneNumber" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Orders
+					<a class='btn text-@(_sortBy == "order" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("order")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "order" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Registered Date
+					<a class='btn text-@(_sortBy == "createdAt" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdAt")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdAt" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Registered By
+					<a class='btn text-@(_sortBy == "createdBy" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdBy")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdBy" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@{
+			IEnumerable<Customer> customers = _customers;
+
+			customers = _tabFilter switch
+			{
+				"Regular" => CustomerService.GetRegularCustomers(),
+				"Complimentary" => CustomerService.GetComplimentaryCoffeeCustomers(),
+				_ => _sortBy switch
+				{
+					"username" => _sortDirection == "up" ? customers.OrderBy(p => p.Username) : customers.OrderByDescending(p => p.Username),
+					"phoneNumber" => _sortDirection == "up" ? customers.OrderBy(p => p.PhoneNumber) : customers.OrderByDescending(p => p.PhoneNumber),
+					"order" => _sortDirection == "up" ? CustomerService.MergeSort(customers.ToList()) : customers.OrderByDescending(p => p.Orders),
+					"createdAt" => _sortDirection == "up" ? customers.OrderBy(p => p.CreatedOn) : customers.OrderByDescending(p => p.CreatedOn),
+					"createdBy" => _sortDirection == "up" ? customers.OrderBy(p => p.CreatedBy) : customers.OrderByDescending(p => p.CreatedBy),
+					_ => customers
+				}
+			};
+			
+			foreach (var user in customers)
+			{
+				<tr>
+					<td>@user.Username</td>
+					<td>@user.PhoneNumber</td>
+					<td>@user.Orders</td>
+					<td>@user.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+					<td>
+					@{
+						var creator = UserService.GetById(user.CreatedBy);
+						<span>@(creator.Id == Guid.Empty ? "Administration" : creator.Username)</span>
+					}
+					</td>
+					<td>
+						<button disabled="@(_globalState.User != null && _globalState.User.Id == user.Id)"
+							class="btn btn-outline-danger" type="button" @onclick="()=>OpenDeleteUserDialog(user)">
+							<i class="fa-regular fa-trash-can"></i> &nbsp; Delete
+						</button>
+					</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+@if(_showAddCustomerDialog){
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnAddCustomerDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Username</label>
+				<input type="text" class="form-control" @bind="_customerModel.Username" placeholder="Enter your username">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Phone Number</label>
+				<input type="text" class="form-control" @bind="_customerModel.PhoneNumber" placeholder="Enter your phone number">
+			</div>
+			@if (!string.IsNullOrEmpty(_addCustomerErrorMessage))
+			{
+				<ErrorMessage Type="danger" Message="@_addCustomerErrorMessage" />
+			}
+		</form>
+	</ModalDialog>
+}
+
+@if(_showDeleteCustomerDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnDeleteUserDialogClose" OkLabel="@_dialogOkLabel">
+
+		<p>Are you sure you want to delete <strong>@_customerModel?.Username</strong> user and their data?</p>
+
+		@if (!string.IsNullOrEmpty(_deleteCustomerErrorMessage))
+		{
+			<ErrorMessage Type="danger" Message="@_deleteCustomerErrorMessage" />
+		}
+	</ModalDialog>
+}

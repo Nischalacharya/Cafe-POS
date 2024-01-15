@@ -1,0 +1,113 @@
+﻿@page "/stats"
+@using System.Globalization
+@using Cafe.POS.Models.DTOs
+@inject IJSRuntime _jsRuntime
+
+<div class="row mt-3 mb-3">
+	<div class="col-6">
+		<h3>Stats Index</h3>
+	</div>
+	<div class="col-6 text-end">
+		<button class="btn btn-outline-dark" type="button" @onclick="OpenReportDialog">
+			<i class="fa-solid fa-plus"></i> &nbsp; Download PDF
+		</button>
+	</div>
+</div>
+
+<ul class="nav nav-tabs">
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Coffee" ? "active" : "")' @onclick='()=>TabFilter("Coffee")'>Coffee</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Add In" ? "active" : "")' @onclick='()=>TabFilter("Add In")'>Add In</a>
+	</li>
+</ul>	
+
+<table class="table">
+	<thead>
+	<tr>
+		<th>
+			<div class="d-flex">
+				Title
+			</div>
+		</th>
+		<th>
+			<div class="d-flex">
+				Unit Price
+			</div>
+		</th>
+		<th>
+			<div class="d-flex">
+				Total Sales
+			</div>
+		</th>
+		<th>
+			<div class="d-flex">
+				Last Ordered Date
+			</div>
+		</th>
+		<th></th>
+	</tr>
+	</thead>
+	<tbody>
+	@{
+		IEnumerable<OrderRecords> orderModels = _orderModels;
+
+		foreach (var item in orderModels)
+		{
+			<tr>
+				<td>@item.Name</td>
+				<td class="text-end">Rs @item.Price.ToString("N2", CultureInfo.CreateSpecificCulture("ne-NP"))</td>
+				<td class="text-end">@item.TotalSales</td>
+				<td>@item.LastOrderedDate</td>
+			</tr>
+		}
+		<tr>
+			<td colspan="2">Total</td>
+			<td class="text-end">@_orderModels.Sum(x => x.TotalSales)</td>
+			<td></td>
+		</tr>
+	}
+	</tbody>
+</table>
+
+@if(_showStatsDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnDownloadReport" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">Select an action to download a report</label>
+				<div class="form-check mb-2">
+					<input id="userRole" type="radio" class="form-check-input" name="frequency" value="1" @onchange="FrequencyChangeHandler">
+					<label class="form-check-label" for="userRole">Daily</label>
+				</div>
+				<div class="form-check mb-2">
+					<input id="adminRole" type="radio" class="form-check-input" name="frequency" value="2" @onchange="FrequencyChangeHandler">
+					<label class="form-check-label" for="adminRole">Monthly</label>
+				</div>
+				@if (_showMonthsDropdown)
+				{
+					<select class="form-control" @bind="_selectedMonth">
+						<option selected="selected" disabled="disabled">Select a Month</option>
+						@for (var i = 1; i <= 12; i++)
+                        {
+                            <option value="@i">@DateTimeFormatInfo.CurrentInfo.GetMonthName(i)</option>
+                        }
+					</select>
+				}
+				@if (_showDateInput)
+                {
+                	<input type="date" class="form-control" @bind="_selectedDateTime" />
+                }
+			</div>
+			@if (!string.IsNullOrEmpty(_recordErrorMessage))
+			{
+				<ErrorMessage Type="danger" Message="@_recordErrorMessage" />
+			}
+			@if (!string.IsNullOrEmpty(_recordSuccessMessage))
+			{
+				<ErrorMessage Type="success" Message="@_recordSuccessMessage" />
+			}
+		</form>
+	</ModalDialog>
+}

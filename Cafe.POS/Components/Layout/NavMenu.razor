@@ -1,0 +1,55 @@
+﻿@using Cafe.POS.Models
+
+<div class="top-row ps-3 navbar navbar-dark">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="">POS</a>
+		<button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+	</div>
+</div>
+
+<div @onclick="ToggleNavMenu">
+	<nav class="flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-house-chimney"></i> &nbsp; Home
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="users" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-user"></i> &nbsp; Users
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="customers">
+				<i class="fa-solid fa-users"></i> &nbsp; Customers
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="coffees" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-mug-saucer"></i> &nbsp; Coffee
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="add-ins" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-cookie-bite"></i> &nbsp; Add Ins
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="orders" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-cart-plus"></i> &nbsp; Orders
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="stats" Match="NavLinkMatch.All">
+				<i class="fa-solid fa-file-waveform"></i> &nbsp; Transactions
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link text-danger" role="button" @onclick="LogoutHandler">
+				<i class="fa-solid fa-right-from-bracket"></i> &nbsp; Logout
+			</NavLink>
+		</div>
+	</nav>
+</div>

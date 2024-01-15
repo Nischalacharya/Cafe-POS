@@ -1,0 +1,209 @@
+﻿@page "/add-ins"
+@using Cafe.POS.Models
+@using Cafe.POS.Services
+@using System.Globalization
+@using Cafe.POS.Models.Enums
+
+<div class="row mt-3 mb-3">
+	<div class="col-6">
+		<h3>Add In Index</h3>
+	</div>
+	<div class="col-6 text-end">
+		@if (_globalState.User?.Role == Role.Admin)
+		{
+			<button class="btn btn-outline-dark" type="button" @onclick="OpenAddAddInDialog">
+				<i class="fa-solid fa-plus"></i> &nbsp; Add a new Add In
+			</button>
+		}
+	</div>
+</div>
+
+<ul class="nav nav-tabs">
+	<li class="nav-item ">
+		<a class='nav-link btn @(_tabFilter == "All" ? "active" : "")' @onclick='()=>TabFilter("All")'>All</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Active" ? "active" : "")' @onclick='()=>TabFilter("Active")'>Active</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "In Active" ? "active" : "")' @onclick='()=>TabFilter("In Active")'>In Active</a>
+	</li>
+</ul>		
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				<div class="d-flex">
+					Status
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					<input type="search" class="form-control search" placeholder="Search an Add In" @oninput="SearchAddInName"/>
+					<a class='btn text-@(_sortBy == "addIn" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+					   @onclick='() => SortByHandler("addIn")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "addIn" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Price
+					<a class='btn text-@(_sortBy == "price" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+					   @onclick='() => SortByHandler("price")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "price" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Unit
+					<a class='btn text-@(_sortBy == "unit" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+					   @onclick='() => SortByHandler("unit")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "unit" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created By
+					<a class='btn text-@(_sortBy == "createdBy" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+					   @onclick='() => SortByHandler("createdBy")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdBy" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created At
+					<a class='btn text-@(_sortBy == "createdAt" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+					   @onclick='() => SortByHandler("createdAt")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdAt" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+	@{
+		IEnumerable<AddIn> addIns = _addIns;
+
+		addIns = _tabFilter switch
+		{
+			"Active" => addIns.Where(x => x.IsActive),
+			"In Active" => addIns.Where(x => !x.IsActive),
+			_ => _sortBy switch
+			{
+				"addIn" => _sortDirection == "up" ? addIns.OrderBy(p => p.Name) : addIns.OrderByDescending(p => p.Name),
+				"price" => _sortDirection == "up" ? AddInService.MergeSort(addIns.ToList()) : addIns.OrderByDescending(p => p.Price),
+				"unit" => _sortDirection == "up" ? addIns.OrderBy(p => p.Unit) : addIns.OrderByDescending(p => p.Unit),
+				"createdBy" => _sortDirection == "up" ? addIns.OrderBy(p => p.CreatedBy) : addIns.OrderByDescending(p => p.CreatedBy),
+				"createdAt" => _sortDirection == "up" ? addIns.OrderBy(p => p.CreatedOn) : addIns.OrderByDescending(p => p.CreatedOn),
+				_ => addIns
+			}
+		};
+
+		foreach (var addIn in addIns)
+		{
+			<tr>
+				<td>
+					<div class="form-check">
+                        <input class="form-check-input me-0" type="checkbox" checked="@addIn.IsActive" @onchange='()=>UpdateActiveStatus(addIn)' />
+                    </div>
+				</td>
+				<td class='@(addIn.IsActive ? "" : "text-danger")'>@addIn.Name</td>
+				<td class='text-end @(addIn.IsActive ? "" : "text-danger")'>@addIn.Price.ToString("N2", CultureInfo.CreateSpecificCulture("ne-NP"))</td>
+				<td class='@(addIn.IsActive ? "" : "text-danger")'>@addIn.Unit</td>
+				<td class='@(addIn.IsActive ? "" : "text-danger")'>
+					@{
+						var creator = AddInService.GetById(addIn.Id);
+						var user = UserService.GetById(creator.CreatedBy);
+						<span>@(creator == null ? "Admin" : user.Username)</span>
+					}
+				</td>
+				<td class='@(addIn.IsActive ? "" : "text-danger")'>
+					<p class="small mb-0"> @addIn.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</p>
+				</td>
+				<td class='@(addIn.IsActive ? "" : "text-danger")'>
+					@if (_globalState.User is { Role: Role.Admin })
+					{
+						<button class="btn btn-outline-secondary" type="button" @onclick="()=>OpenPasswordDialog(addIn, true)">
+							<i class="fa-solid fa-pen"></i> &nbsp; Edit
+						</button>
+						<button class="btn btn-outline-danger" type="button" @onclick="()=>OpenPasswordDialog(addIn, false)">
+							<i class="fa-solid fa-trash"></i> &nbsp; Delete
+						</button>
+					}
+				</td>
+			</tr>
+		}
+	}
+	</tbody>
+</table>
+
+@if (_showUpsertAddInDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnUpsertAddInDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Title</label>
+				<input type="text" class="form-control" @bind="_addInModel.Name" placeholder="Enter the title">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Description</label>
+				<textarea type="text" class="form-control" @bind="_addInModel.Description" placeholder="Enter the title"></textarea>
+			</div>
+			<div class="mb-3">
+            	<label class="form-label">&nbsp;Unit</label>
+	            <select class="form-control" @bind="_addInModel.Unit">
+		            <option disabled="" selected="" label="Select a unit of the item"></option>
+		            @foreach (var item in Enum.GetValues(typeof(Unit)))
+		            {
+			            <option value="@item">@item</option>
+		            }
+	            </select>
+            </div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Price</label>
+				<input type="number" class="form-control" @bind="_addInModel.Price" placeholder="Enter the price of the Add In">
+			</div>
+		</form>
+
+	@if (!string.IsNullOrEmpty(_upsertAddInErrorMessage))
+	{
+		<ErrorMessage Type="danger" Message="@_upsertAddInErrorMessage" />
+	}
+	</ModalDialog>
+}
+
+@if (_showPasswordDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnPasswordVerifyDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Password</label>
+				<input type="password" class="form-control" @bind="_password" placeholder="Enter the admin password">
+			</div>
+		</form>
+
+	@if (!string.IsNullOrEmpty(_passwordErrorMessage))
+	{
+		<ErrorMessage Type="danger" Message="@_passwordErrorMessage" />
+	}
+	</ModalDialog>
+}
+
+@if (_showDeleteAddInDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnDeleteAddInDialogClose" OkLabel="@_dialogOkLabel">
+		
+		<p>Are you sure you want to delete <strong>@_addInModel.Name</strong>?</p>
+		
+		@if (!string.IsNullOrEmpty(_deleteAddInErrorMessage))
+		{
+			<ErrorMessage Type="danger" Message="@_deleteAddInErrorMessage" />
+		}
+	</ModalDialog>
+}

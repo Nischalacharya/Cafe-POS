@@ -1,0 +1,169 @@
+﻿@page "/users"
+@using Cafe.POS.Models
+@using Cafe.POS.Models.Enums
+@using Cafe.POS.Services
+
+<div class="row mt-3 mb-3">
+	<div class="col-6">
+		<h3>User Index</h3>
+	</div>
+	<div class="col-6 text-end">
+		<button class="btn btn-outline-dark" type="button" @onclick="OpenAddUserDialog">
+			<i class="fa-solid fa-plus"></i> &nbsp; Add a new user
+		</button>
+	</div>
+</div>
+
+<ul class="nav nav-tabs">
+	<li class="nav-item ">
+		<a class='nav-link btn @(_tabFilter == "All" ? "active" : "")' @onclick='()=>TabFilter("All")'>All</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Admin" ? "active" : "")' @onclick='()=>TabFilter("Admin")'>Admin</a>
+	</li>
+	<li class="nav-item">
+		<a class='nav-link btn @(_tabFilter == "Staff" ? "active" : "")' @onclick='()=>TabFilter("Staff")'>Staff</a>
+	</li>
+</ul>	
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				<div class="d-flex">
+					<input type="search" class="form-control search" placeholder="Search a user" @oninput="SearchUserName" />
+					<a class='btn text-@(_sortBy == "username" ? "primary" : "secondary")' data-mdb-toggle="tooltip" 
+						@onclick='()=>SortByHandler("username")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "username" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Email
+					<a class='btn text-@(_sortBy == "email" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("email")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "email" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Role
+					<a class='btn text-@(_sortBy == "role" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("role")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "role" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created At
+					<a class='btn text-@(_sortBy == "createdAt" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdAt")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdAt" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th>
+				<div class="d-flex">
+					Created By
+					<a class='btn text-@(_sortBy == "createdBy" ? "primary" : "secondary")' data-mdb-toggle="tooltip"
+						@onclick='()=>SortByHandler("createdBy")'>
+						<i class="fa-solid fa-sort-@(_sortBy == "createdBy" ? _sortDirection : "up")"></i>
+					</a>
+				</div>
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@{
+			IEnumerable<User> users = _users;
+
+			users = _tabFilter switch
+			{
+				"Admin" => users.Where(x => x.Role == Role.Admin),
+				"Staff" => users.Where(x => x.Role == Role.Staff),
+				_ => _sortBy switch
+				{
+					"username" => _sortDirection == "up" ? users.OrderBy(p => p.Username) : users.OrderByDescending(p => p.Username),
+					"email" => _sortDirection == "up" ? users.OrderBy(p => p.Email) : users.OrderByDescending(p => p.Email),
+					"role" => _sortDirection == "up" ? users.OrderBy(p => p.Role) : users.OrderByDescending(p => p.Role),
+					"createdAt" => _sortDirection == "up" ? users.OrderBy(p => p.CreatedOn) : users.OrderByDescending(p => p.CreatedOn),
+					"createdBy" => _sortDirection == "up" ? users.OrderBy(p => p.CreatedBy) : users.OrderByDescending(p => p.CreatedBy),
+					_ => users
+				}
+			};
+
+			foreach (var user in users)
+			{
+				<tr>
+					<td>@user.Username</td>
+					<td>@user.Email</td>
+					<td>@user.Role.ToString()</td>
+					<td>@user.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+					<td>
+					@{
+						var creator = UserService.GetById(user.CreatedBy);
+						<span>@(creator.Id == Guid.Empty ? "Administration" : creator.Username)</span>
+					}
+					</td>
+					<td>
+						<button disabled="@(_globalState.User != null && _globalState.User.Id == user.Id && _globalState.User.Role != Role.Admin)"
+							class="btn btn-outline-danger" type="button" @onclick="()=>OpenDeleteUserDialog(user)">
+							<i class="fa-regular fa-trash-can"></i> &nbsp; Delete
+						</button>
+					</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+@if(_showAddUserDialog){
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnAddUserDialogClose" OkLabel="@_dialogOkLabel">
+		<form>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Username</label>
+				<input type="text" class="form-control" @bind="_userModel.Username" placeholder="Enter your username">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Email Address</label>
+				<input type="text" class="form-control" @bind="_userModel.Email" placeholder="Enter your email address">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">&nbsp;Password</label>
+					<input type="password" class="form-control" @bind="_userPassword" placeholder="Enter your password">
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Choose a role to assign</label>
+				<div class="form-check mb-2">
+					<label class="form-check-label" for="userRole">@Role.Staff</label>
+					<input id="userRole" type="radio" class="form-check-input" name="role" value="@Role.Staff" @onchange="RoleChangeHandler" checked="@(_userRole == Role.Staff)">
+				</div>
+				<div class="form-check">
+					<input id="adminRole" type="radio" class="form-check-input" name="role" value="@Role.Admin" @onchange="RoleChangeHandler" checked="@(_userRole == Role.Admin)">
+					<label class="form-check-label" for="adminRole">@Role.Admin</label>
+				</div>
+			</div>
+			@if (!string.IsNullOrEmpty(_addUserErrorMessage))
+			{
+				<ErrorMessage Type="danger" Message="@_addUserErrorMessage" />
+			}
+		</form>
+	</ModalDialog>
+}
+
+@if(_showDeleteUserDialog)
+{
+	<ModalDialog Title="@_dialogTitle" OnClose="@OnDeleteUserDialogClose" OkLabel="@_dialogOkLabel">
+
+		<p>Are you sure you want to delete <strong>@_userModel?.Username</strong> user and their data?</p>
+
+		@if (!string.IsNullOrEmpty(_deleteUserErrorMessage))
+		{
+			<ErrorMessage Type="danger" Message="@_deleteUserErrorMessage" />
+		}
+	</ModalDialog>
+}
